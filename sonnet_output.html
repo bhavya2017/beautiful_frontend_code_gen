@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Analytics Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/2.29.3/date-fns.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        
+        .action-buttons button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 0.6rem 1rem;
+            margin-left: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .action-buttons button:hover {
+            background-color: #2980b9;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .filter-section {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .filter-section h2 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .filter-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+        
+        .date-control {
+            display: flex;
+            flex-direction: column;
+            min-width: 200px;
+        }
+        
+        .date-control label {
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .date-control input {
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .apply-filters {
+            align-self: flex-end;
+            margin-top: 1.5rem;
+            padding: 0.75rem 1.5rem;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .apply-filters:hover {
+            background-color: #1a2530;
+        }
+        
+        .dashboards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        
+        .chart-container {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        
+        .chart-container h3 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .performance-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .metric-card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .metric-card h3 {
+            font-size: 1rem;
+            color: #7f8c8d;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .metric-card .change {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .positive {
+            color: #27ae60;
+        }
+        
+        .negative {
+            color: #e74c3c;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 4px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 10;
+            max-width: 300px;
+        }
+        
+        .comparison-section {
+            margin-top: 2rem;
+        }
+        
+        .comparison-section h2 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .comparison-controls {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1.5rem;
+        }
+        
+        .select-wrapper {
+            flex: 1;
+        }
+        
+        .select-wrapper label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .select-wrapper select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+        }
+        
+        .tab-container {
+            margin-top: 2rem;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            background-color: #ecf0f1;
+            border: none;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .tab-button.active {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @media (max-width: 992px) {
+            .dashboards {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .legend-color {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 50%;
+        }
+        
+        .export-options {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 5;
+        }
+        
+        .export-options button {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            color: #7f8c8d;
+            transition: color 0.3s;
+        }
+        
+        .export-options button:hover {
+            color: #2c3e50;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+        }
+        
+        .data-table th, .data-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .data-table th {
+            background-color: #f5f7fa;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f5f7fa;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Financial Analytics</div>
+        <div class="action-buttons">
+            <button id="export-report">Export Report</button>
+            <button id="settings">Settings</button>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="filter-section">
+            <h2>Data Filter</h2>
+            <div class="filter-controls">
+                <div class="date-control">
+                    <label for="start-date">Start Date</label>
+                    <input type="date" id="start-date" value="2023-01-01">
+                </div>
+                <div class="date-control">
+                    <label for="end-date">End Date</label>
+                    <input type="date" id="end-date" value="2023-12-31">
+                </div>
+                <div class="date-control">
+                    <label for="data-granularity">Data Granularity</label>
+                    <select id="data-granularity">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly" selected>Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                    </select>
+                </div>
+                <button class="apply-filters" id="apply-filters">Apply Filters</button>
+            </div>
+        </div>
+        
+        <div class="performance-metrics">
+            <div class="metric-card">
+                <h3>Total Revenue</h3>
+                <div class="value">$1,245,300</div>
+                <div class="change positive">+12.5% vs. previous period</div>
+            </div>
+            <div class="metric-card">
+                <h3>Net Profit</h3>
+                <div class="value">$458,900</div>
+                <div class="change positive">+8.7% vs. previous period</div>
+            </div>
+            <div class="metric-card">
+                <h3>Profit Margin</h3>
+                <div class="value">36.8%</div>
+                <div class="change negative">-2.1% vs. previous period</div>
+            </div>
+            <div class="metric-card">
+                <h3>Operating Expenses</h3>
+                <div class="value">$786,400</div>
+                <div class="change negative">+15.3% vs. previous period</div>
+            </div>
+        </div>
+        
+        <div class="dashboards">
+            <div class="chart-container">
+                <h3>Revenue & Expenses Trend</h3>
+                <div class="export-options">
+                    <button class="export-chart" data-chart="revenue-expense-chart">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </button>
+                </div>
+                <canvas id="revenue-expense-chart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Revenue by Product Category</h3>
+                <div class="export-options">
+                    <button class="export-chart" data-chart="category-chart">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </button>
+                </div>
+                <canvas id="category-chart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Monthly Profit Analysis</h3>
+                <div class="export-options">
+                    <button class="export-chart" data-chart="profit-chart">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </button>
+                </div>
+                <canvas id="profit-chart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Expense Breakdown</h3>
+                <div class="export-options">
+                    <button class="export-chart" data-chart="expense-breakdown-chart">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </button>
+                </div>
+                <canvas id="expense-breakdown-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="comparison-section">
+            <h2>Comparative Analysis</h2>
+            <div class="comparison-controls">
+                <div class="select-wrapper">
+                    <label for="metric1">Select Primary Metric</label>
+                    <select id="metric1">
+                        <option value="revenue">Revenue</option>
+                        <option value="profit">Net Profit</option>
+                        <option value="margin">Profit Margin</option>
+                        <option value="expenses">Operating Expenses</option>
+                    </select>
+                </div>
+                <div class="select-wrapper">
+                    <label for="metric2">Select Secondary Metric</label>
+                    <select id="metric2">
+                        <option value="revenue">Revenue</option>
+                        <option value="profit" selected>Net Profit</option>
+                        <option value="margin">Profit Margin</option>
+                        <option value="expenses">Operating Expenses</option>
+                    </select>
+                </div>
+                <div class="select-wrapper">
+                    <label for="time-period">Time Period</label>
+                    <select id="time-period">
+                        <option value="current">Current Period</option>
+                        <option value="previous">Previous Period</option>
+                        <option value="yoy">Year-over-Year</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Comparative Analysis</h3>
+                <div class="export-options">
+                    <button class="export-chart" data-chart="comparison-chart">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </button>
+                </div>
+                <canvas id="comparison-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="tab-container">
+            <div class="tabs">
+                <button class="tab-button active" data-tab="data-view">Data View</button>
+                <button class="tab-button" data-tab="summary-view">Summary</button>
+                <button class="tab-button" data-tab="forecast-view">Forecast</button>
+            </div>
+            
+            <div class="tab-content active" id="data-view">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Revenue</th>
+                            <th>Expenses</th>
+                            <th>Profit</th>
+                            <th>Margin</th>
+                        </tr>
+                    </thead>
+                    <tbody id="data-table-body">
+                        <!-- Data rows will be populated via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="tab-content" id="summary-view">
+                <div class="chart-container">
+                    <h3>Financial Performance Summary</h3>
+                    <canvas id="summary-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="forecast-view">
+                <div class="chart-container">
+                    <h3>6-Month Revenue Forecast</h3>
+                    <canvas id="forecast-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Sample financial data
+        const financialData = {
+            revenueByMonth: [
+                { month: 'Jan', value: 89000 },
+                { month: 'Feb', value: 95000 },
+                { month: 'Mar', value: 104000 },
+                { month: 'Apr', value: 112000 },
+                { month: 'May', value: 121000 },
+                { month: 'Jun', value: 110000 },
+                { month: 'Jul', value: 105000 },
+                { month: 'Aug', value: 109000 },
+                { month: 'Sep', value: 114000 },
+                { month: 'Oct', value: 125000 },
+                { month: 'Nov', value: 131000 },
+                { month: 'Dec', value: 142000 }
+            ],
+            expensesByMonth: [
+                { month: 'Jan', value: 59000 },
+                { month: 'Feb', value: 61000 },
+                { month: 'Mar', value: 64000 },
+                { month: 'Apr', value: 68000 },
+                { month: 'May', value: 72000 },
+                { month: 'Jun', value: 69000 },
+                { month: 'Jul', value: 66000 },
+                { month: 'Aug', value: 68000 },
+                { month: 'Sep', value: 70000 },
+                { month: 'Oct', value: 74000 },
+                { month: 'Nov', value: 76000 },
+                { month: 'Dec', value: 82000 }
+            ],
+            profitByMonth: [
+                { month: 'Jan', value: 30000 },
+                { month: 'Feb', value: 34000 },
+                { month: 'Mar', value: 40000 },
+                { month: 'Apr', value: 44000 },
+                { month: 'May', value: 49000 },
+                { month: 'Jun', value: 41000 },
+                { month: 'Jul', value: 39000 },
+                { month: 'Aug', value: 41000 },
+                { month: 'Sep', value: 44000 },
+                { month: 'Oct', value: 51000 },
+                { month: 'Nov', value: 55000 },
+                { month: 'Dec', value: 60000 }
+            ],
+            marginByMonth: [
+                { month: 'Jan', value: 33.7 },
+                { month: 'Feb', value: 35.8 },
+                { month: 'Mar', value: 38.5 },
+                { month: 'Apr', value: 39.3 },
+                { month: 'May', value: 40.5 },
+                { month: 'Jun', value: 37.3 },
+                { month: 'Jul', value: 37.1 },
+                { month: 'Aug', value: 37.6 },
+                { month: 'Sep', value: 38.6 },
+                { month: 'Oct', value: 40.8 },
+                { month: 'Nov', value: 42.0 },
+                { month: 'Dec', value: 42.3 }
+            ],
+            revenueByCategory: [
+                { category: 'Product A', value: 420000 },
+                { category: 'Product B', value: 350000 },
+                { category: 'Product C', value: 210000 },
+                { category: 'Product D', value: 175000 },
+                { category: 'Other', value: 90000 }
+            ],
+            expenseBreakdown: [
+                { category: 'Salaries', value: 320000 },
+                { category: 'Marketing', value: 180000 },
+                { category: 'Operations', value: 150000 },
+                { category: 'R&D', value: 95000 },
+                { category: 'Administrative', value: 75000 },
+                { category: 'Other', value: 38000 }
+            ],
+            forecastData: [
+                { month: 'Jan', value: 142000 },
+                { month: 'Feb', value: 145000 },
+                { month: 'Mar', value: 153000 },
+                { month: 'Apr', value: 160000 },
+                { month: 'May', value: 168000 },
+                { month: 'Jun', value: 172000 }
+            ]
+        };
+
+        // Chart colors
+        const chartColors = {
+            revenue: 'rgba(52, 152, 219, 0.7)',
+            profit: 'rgba(46, 204, 113, 0.7)',
+            expense: 'rgba(231, 76, 60, 0.7)',
+            margin: 'rgba(155, 89, 182, 0.7)',
+            forecast: 'rgba(241, 196, 15, 0.7)',
+            borderRevenue: 'rgba(52, 152, 219, 1)',
+            borderProfit: 'rgba(46, 204, 113, 1)',
+            borderExpense: 'rgba(231, 76, 60, 1)',
+            borderMargin: 'rgba(155, 89, 182, 1)',
+            borderForecast: 'rgba(241, 196, 15, 1)'
+        };
+
+        // Utility function to format currency values
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0
+            }).format(value);
+        }
+
+        // Populate data table
+        function populateDataTable() {
+            const tableBody = document.getElementById('data-table-body');
+            tableBody.innerHTML = '';
+            
+            for (let i = 0; i < financialData.revenueByMonth.length; i++) {
+                const row = document.createElement('tr');
+                
+                const monthCell = document.createElement('td');
+                monthCell.textContent = financialData.revenueByMonth[i].month;
+                row.appendChild(monthCell);
+                
+                const revenueCell = document.createElement('td');
+                revenueCell.textContent = formatCurrency(financialData.revenueByMonth[i].value);
+                row.appendChild(revenueCell);
+                
+                const expenseCell = document.createElement('td');
+                expenseCell.textContent = formatCurrency(financialData.expensesByMonth[i].value);
+                row.appendChild(expenseCell);
+                
+                const profitCell = document.createElement('td');
+                profitCell.textContent = formatCurrency(financialData.profitByMonth[i].value);
+                row.appendChild(profitCell);
+                
+                const marginCell = document.createElement('td');
+                marginCell.textContent = financialData.marginByMonth[i].value.toFixed(1) + '%';
+                row.appendChild(marginCell);
+                
+                tableBody.appendChild(row);
+            }
+        }
+
+        // Initialize charts
+        function initializeCharts() {
+            // Revenue & Expenses Trend Chart
+            const revenueExpenseCtx = document.getElementById('revenue-expense-chart').getContext('2d');
+            const revenueExpenseChart = new Chart(revenueExpenseCtx, {
+                type: 'line',
+                data: {
+                    labels: financialData.revenueByMonth.map(item => item.month),
+                    datasets: [
+                        {
+                            label: 'Revenue',
+                            data: financialData.revenueByMonth.map(item => item.value),
+                            backgroundColor: chartColors.revenue,
+                            borderColor: chartColors.borderRevenue,
+                            borderWidth: 2,
+                            tension: 0.3,
+                            pointRadius: 4
+                        },
+                        {
+                            label: 'Expenses',
+                            data: financialData.expensesByMonth.map(item => item.value),
+                            backgroundColor: chartColors.expense,
+                            borderColor: chartColors.borderExpense,
+                            borderWidth: 2,
+                            tension: 0.3,
+                            pointRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatCurrency(context.raw);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Revenue by Category Chart (Pie Chart)
+            const categoryCtx = document.getElementById('category-chart').getContext('2d');
+            const categoryChart = new Chart(categoryCtx, {
+                type: 'pie',
+                data: {
+                    labels: financialData.revenueByCategory.map(item => item.category),
+                    datasets: [{
+                        data: financialData.revenueByCategory.map(item => item.value),
+                        backgroundColor: [
+                            'rgba(52, 152, 219, 0.7)',
+                            'rgba(46, 204, 113, 0.7)',
+                            'rgba(155, 89, 182, 0.7)',
+                            'rgba(241, 196, 15, 0.7)',
+                            'rgba(230, 126, 34, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(52, 152, 219, 1)',
+                            'rgba(46, 204, 113, 1)',
+                            'rgba(155, 89, 182, 1)',
+                            'rgba(241, 196, 15, 1)',
+                            'rgba(230, 126, 34, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = formatCurrency(context.raw);
+                                    const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((context.raw / total) * 100);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Monthly Profit Analysis Chart
+            const profitCtx = document.getElementById('profit-chart').getContext('2d');
+            const profitChart = new Chart(profitCtx, {
+                type: 'bar',
+                data: {
+                    labels: financialData.profitByMonth.map(item => item.month),
+                    datasets: [
+                        {
+                            label: 'Profit',
+                            data: financialData.profitByMonth.map(item => item.value),
+                            backgroundColor: chartColors.profit,
+                            borderColor: chartColors.borderProfit,
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Profit Margin (%)',
+                            data: financialData.marginByMonth.map(item => item.value),
+                            type: 'line',
+                            yAxisID: 'y1',
+                            backgroundColor: chartColors.margin,
+                            borderColor: chartColors.borderMargin,
+                            borderWidth: 2,
+                            tension: 0.4,
+                            pointRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Profit ($)'
+                            },
